@@ -1,177 +1,192 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "NRGkick",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "NRGkick Gen2 charger over its local API: state, power, energy, pause; optional commands.",
+    "fr": "Borne NRGkick Gen2 par son API locale : état, puissance, énergie, pause ; commandes en option."
   },
-  "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "version": "0.1.0",
+  "docker_image": "ghcr.io/lm1lc3n7/gladys-nrgkick:0.1.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/LM1LC3N7/gladys-nrgkick/main/cover.png",
+  "categories": ["energy"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Your NRGkick",
+        "fr": "Votre NRGkick"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "Shows your NRGkick Gen2 portable charger in Gladys through its local REST JSON API, without any cloud: state, vehicle plugged in, power, current and voltage per phase, energy of the session, energy index, temperatures, codes. In the NRGkick app, turn on the local JSON API; give the charger a fixed address in your router. Enter its IP address, save, then add it from the Discovery tab. Pausing the charge is always possible from Gladys; resuming it and the charging current only if you allow them below. Never tested with a real charger. Not affiliated with DiniTech.",
+        "fr": "Affiche votre borne portable NRGkick Gen2 dans Gladys par son API REST JSON locale, sans cloud : état, véhicule branché, puissance, courant et tension par phase, énergie de la session, index d'énergie, températures, codes. Dans l'application NRGkick, activez l'API JSON locale ; donnez à la borne une adresse fixe dans votre box. Saisissez son adresse IP, enregistrez, puis ajoutez-la depuis l'onglet Découverte. Mettre la charge en pause est toujours possible depuis Gladys ; la reprendre et le courant de charge seulement si vous les autorisez ci-dessous. Jamais testé avec une vraie borne. Sans lien avec DiniTech."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/LM1LC3N7/gladys-nrgkick/blob/main/docs/fr.md",
+          "label": {
+            "en": "Guide (French)",
+            "fr": "Guide (français)"
+          }
+        },
+        {
+          "url": "https://github.com/LM1LC3N7/gladys-nrgkick/blob/main/docs/en.md",
+          "label": {
+            "en": "Guide (English)",
+            "fr": "Guide (anglais)"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "host",
+      "type": "string",
+      "label": {
+        "en": "IP address of the charger",
+        "fr": "Adresse IP de la borne"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
+      "description": {
+        "en": "An IPv4 address or a host name, optionally followed by a port (80 by default).",
+        "fr": "Une adresse IPv4 ou un nom d'hôte, éventuellement suivi d'un port (80 par défaut)."
+      },
+      "placeholder": {
+        "en": "192.168.1.70",
+        "fr": "192.168.1.70"
+      },
       "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "default": ""
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "key": "username",
+      "type": "string",
+      "label": {
+        "en": "User name (BasicAuth, optional)",
+        "fr": "Nom d'utilisateur (BasicAuth, facultatif)"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "description": {
+        "en": "Only if BasicAuth is on in the NRGkick app: its user name. Leave empty otherwise.",
+        "fr": "Seulement si BasicAuth est activé dans l'application NRGkick : son nom d'utilisateur. Laissez vide sinon."
+      },
+      "required": false,
+      "default": ""
     },
     {
-      "key": "unit",
+      "key": "password",
+      "type": "secret",
+      "label": {
+        "en": "Password (BasicAuth, optional)",
+        "fr": "Mot de passe (BasicAuth, facultatif)"
+      },
+      "description": {
+        "en": "Only if BasicAuth is on in the NRGkick app: its password. Kept by Gladys in its database, never shown again, sent only to the charger, in clear (HTTP) on the local network. Refused credentials are tried again after 15 min, 1 h, then every 6 h.",
+        "fr": "Seulement si BasicAuth est activé dans l'application NRGkick : son mot de passe. Gardé par Gladys dans sa base, jamais réaffiché, envoyé seulement à la borne, en clair (HTTP) sur le réseau local. Des identifiants refusés sont réessayés après 15 min, 1 h, puis toutes les 6 h."
+      },
+      "required": false
+    },
+    {
+      "key": "allow_commands",
+      "type": "boolean",
+      "label": {
+        "en": "Allow resuming and the charging current",
+        "fr": "Autoriser la reprise et le courant de charge"
+      },
+      "description": {
+        "en": "Off by default. On: Gladys may resume the charge (button) and set the charging current (list, 6 A to the ceiling below). Off: these two features refuse every command. \"Pause charging\" is always available: it only stops the charge.",
+        "fr": "Désactivé par défaut. Activé : Gladys peut reprendre la charge (bouton) et régler le courant de charge (liste, de 6 A au plafond ci-dessous). Désactivé : ces deux fonctionnalités refusent toute commande. « Mettre la charge en pause » reste toujours disponible : elle ne fait qu'arrêter la charge."
+      },
+      "required": false,
+      "default": false
+    },
+    {
+      "key": "max_current",
+      "type": "number",
+      "label": {
+        "en": "Ceiling of the charging current (A)",
+        "fr": "Plafond du courant de charge (A)"
+      },
+      "description": {
+        "en": "The highest current Gladys may ask for (16 A by default). The lower of this value, the rated current of the charger and the max current of its attachment applies.",
+        "fr": "Le courant le plus élevé que Gladys peut demander (16 A par défaut). La plus basse de cette valeur, du courant nominal de la borne et du courant maximal de son adaptateur s'applique."
+      },
+      "required": false,
+      "default": 16,
+      "min": 6,
+      "max": 32
+    },
+    {
+      "key": "poll_interval",
+      "type": "number",
+      "label": {
+        "en": "Refresh interval (s)",
+        "fr": "Intervalle de rafraîchissement (s)"
+      },
+      "description": {
+        "en": "How often the charger is read, in seconds.",
+        "fr": "Fréquence de lecture de la borne, en secondes."
+      },
+      "required": false,
+      "default": 30,
+      "min": 10,
+      "max": 600
+    },
+    {
+      "key": "language",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
-      "required": false,
-      "default": "celsius",
-      "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
-      ]
-    },
-    {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "label": {
+        "en": "Language of the feature names",
+        "fr": "Langue des noms des fonctionnalités"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "Used for the feature names of the devices added from now on, for the status texts and for the command errors.",
+        "fr": "Sert aux noms des fonctionnalités des appareils ajoutés désormais, aux textes d'état et aux erreurs des commandes."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "fr",
+      "options": [
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français"
+          }
+        },
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion"
+      },
+      "description": {
+        "en": "Reads the charger once and shows its state.",
+        "fr": "Lit la borne une fois et affiche son état."
+      },
       "timeout_seconds": 30
     },
     {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
-    }
-  ],
-  "scene_triggers": [
-    {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
-      "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+      "key": "accept_held_index",
+      "label": {
+        "en": "Accept the held index",
+        "fr": "Accepter l'index retenu"
       },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
-        },
-        {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
-        }
-      ],
-      "variables": [
-        {
-          "key": "target",
-          "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
-        }
-      ]
-    }
-  ],
-  "scene_actions": [
-    {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
       "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+        "en": "Two clicks: the first one lists the energy index held back (a drop or a jump), a second one within 60 s accepts exactly that.",
+        "fr": "Deux clics : le premier montre l'index d'énergie retenu (une baisse ou un saut), un second dans les 60 s accepte exactement cela."
       },
-      "timeout_seconds": 15,
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ],
-      "outputs": [
-        {
-          "key": "signalled",
-          "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
-        }
-      ]
-    }
-  ],
-  "widgets": [
-    {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
-      },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "timeout_seconds": 15
     }
   ]
 }
