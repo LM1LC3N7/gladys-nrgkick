@@ -94,8 +94,8 @@
         "fr": "Autoriser la reprise et le courant de charge"
       },
       "description": {
-        "en": "Off by default. On: Gladys may resume the charge (button) and set the charging current (list, 6 A to the ceiling below). Off: these two features refuse every command. \"Pause charging\" is always available: it only stops the charge.",
-        "fr": "Désactivé par défaut. Activé : Gladys peut reprendre la charge (bouton) et régler le courant de charge (liste, de 6 A au plafond ci-dessous). Désactivé : ces deux fonctionnalités refusent toute commande. « Mettre la charge en pause » reste toujours disponible : elle ne fait qu'arrêter la charge."
+        "en": "Off by default. On: Gladys may resume the charge (button) and set the charging current (list, 6 A to the ceiling below). Off: these two features refuse every command. \"Pause charging\" is always available: it only stops the charge, and the pause stays on the charger until a resume; with this option off, only the NRGkick app resumes it (a forgotten pause may prevent the next charge).",
+        "fr": "Désactivé par défaut. Activé : Gladys peut reprendre la charge (bouton) et régler le courant de charge (liste, de 6 A au plafond ci-dessous). Désactivé : ces deux fonctionnalités refusent toute commande. « Mettre la charge en pause » reste toujours disponible : elle ne fait qu'arrêter la charge, et la pause reste sur la borne jusqu'à une reprise ; option désactivée, seule l'application NRGkick la reprend (une pause oubliée peut empêcher la charge suivante)."
       },
       "required": false,
       "default": false

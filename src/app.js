@@ -70,9 +70,6 @@ const both = (en, fr) => ({ en, fr });
 const join = (a, b) => both(`${a.en} ${b.en}`, `${a.fr} ${b.fr}`);
 const round3 = (value) => Math.round(value * 1000) / 1000;
 
-/** A pause began in this cycle: it stops at once. */
-const PAUSED = 'paused';
-
 /** The key of a value held back: what it is, not where it is now (`to` moves). */
 export const holdKey = (held) =>
   held.direction === 'down' ? `down:${held.from}` : `up:${held.from}:${held.threshold}`;
@@ -176,7 +173,16 @@ export class NrgkickApp {
     if (this.memory.pause) {
       this.pausedUntil = Math.max(this.pausedUntil, this.memory.pause.until);
     }
-    this.charger = freshCharger();
+    // The timing of the last commands survives a restart (new credentials or
+    // address): the minute between two changes and the watch of a resume
+    // left unconfirmed are never reset by a save of the form.
+    const previous = this.charger;
+    this.charger = {
+      ...freshCharger(),
+      lastChangeAt: previous.lastChangeAt,
+      lastResumeAt: previous.lastResumeAt,
+      unconfirmedResumeUntil: previous.unconfirmedResumeUntil,
+    };
     this.indexGuards.clear();
     this.pendingAccept = undefined;
     this.published = undefined;
@@ -390,7 +396,8 @@ export class NrgkickApp {
     const generation = this.generation;
     const c = this.charger;
     if (this.paused || this.blocked) {
-      await this.updateStatus();
+      // Not read: the devices created are shown offline (never left "charging").
+      await this.publishAll();
       this.schedule();
       return;
     }
@@ -449,13 +456,26 @@ export class NrgkickApp {
     if (c.serial && c.serial !== info.serial) {
       // Another charger answers at this address: the old device is no longer read.
       this.logger.warn('NRGkick: another charger answers at this address');
-      c.index = undefined;
+      Object.assign(c, {
+        index: undefined,
+        model: undefined,
+        firmware: undefined,
+        ratedCurrent: undefined,
+        attachmentMax: undefined,
+        phases: undefined,
+      });
     }
     c.serial = info.serial;
+    // The last serial read at this address, kept in /data: a pause sent
+    // before the first read after a restart goes only to this device.
+    this.memory.serial = info.serial;
     c.model = info.model ?? c.model;
     c.firmware = info.firmware ?? c.firmware;
-    c.ratedCurrent = info.ratedCurrent;
-    c.attachmentMax = info.attachmentMax;
+    // A bound missing from one answer keeps the last one read (never a
+    // higher ceiling); the ceiling of a command is the one of the last /info
+    // read (an attachment changed in between is capped by the charger).
+    c.ratedCurrent = info.ratedCurrent ?? c.ratedCurrent;
+    c.attachmentMax = info.attachmentMax ?? c.attachmentMax;
     c.phases = info.phases ?? c.phases;
     c.values = values;
     this.applyControl(control);
@@ -474,9 +494,6 @@ export class NrgkickApp {
   async failed(err) {
     const c = this.charger;
     const reason = errorReason(err);
-    if (err.kind === PAUSED) {
-      return undefined;
-    }
     if (err.kind === ERROR_KINDS.AUTH) {
       // Not read until new credentials or the end of the block: offline.
       c.online = false;
@@ -605,7 +622,9 @@ export class NrgkickApp {
   /** The connection status of the configuration screen. */
   async updateStatus() {
     const [connected, message, plain] = this.status();
-    const orphans = this.orphans();
+    // "Not read any more" only once a charger was read: before, the status
+    // already says why nothing is read (no address, block, pause, no answer).
+    const orphans = this.charger.serial !== undefined ? this.orphans() : [];
     if (orphans.length === 0) {
       await this.setStatus(connected, message);
       return;
@@ -703,11 +722,18 @@ export class NrgkickApp {
   /**
    * The serials of the devices created in Gladys that the charger read is not
    * (another charger at this address, an address changed, or no answer since
-   * the start). Empty while a first read is still under way.
+   * the start): shown offline. Empty while a first read is still under way;
+   * a pause or a block kept across a restart (no read) shows them offline too.
    */
   orphans() {
     const c = this.charger;
-    if (c.online === undefined && !this.blocked && this.config.address && !this.config.badSecret) {
+    if (
+      c.online === undefined &&
+      !this.blocked &&
+      !this.paused &&
+      this.config.address &&
+      !this.config.badSecret
+    ) {
       return [];
     }
     const serials = [];
@@ -978,8 +1004,10 @@ export class NrgkickApp {
       throw this.refusal(ERRORS.unknownCharger);
     }
     const previous = this.inFlight;
-    if (previous && isPause && previous.role === FEATURES.PAUSE) {
-      // A pause already under way: this one shares its outcome.
+    if (previous && isPause && previous.role === FEATURES.PAUSE && !previous.settled) {
+      // A pause still under way: this one shares its outcome. A pause that
+      // only waits to be sent again (settled) never answers for a new one:
+      // the new one goes itself.
       return previous.promise;
     }
     // One command at a time: a busy charger refuses at once, but a pause is
@@ -993,6 +1021,7 @@ export class NrgkickApp {
       overtaken: previous,
       again: undefined,
       promise: undefined,
+      settled: false,
     };
     this.inFlight = entry;
     entry.promise = this.command(target, wanted, received, entry);
@@ -1004,6 +1033,7 @@ export class NrgkickApp {
     try {
       return await entry.promise;
     } finally {
+      entry.settled = true;
       // A pause to send again keeps the charger busy until it is done (the
       // ack does not wait for it): a newer resume is refused meanwhile.
       if (entry.again) {
@@ -1017,19 +1047,24 @@ export class NrgkickApp {
   /**
    * Whether a command of the device `serial` goes to the charger at the
    * address. A pause also goes when no read gave a serial yet (a pause or a
-   * block kept in /data across a restart, a first read under way) and the
-   * device is one created in Gladys: pausing is never held back. Never when
-   * another charger answers at the address.
+   * block kept in /data across a restart, a first read under way) for the
+   * device of the last serial read at this address (kept in /data): pausing
+   * is never held back. Never when another charger answers at the address.
+   * Without a serial in /data (a state written by an older version), any
+   * device created in Gladys.
    */
   isTarget(serial, role) {
     if (this.charger.serial !== undefined) {
       return this.charger.serial === serial;
     }
-    return (
-      role === FEATURES.PAUSE &&
-      (this.gladys.devices ?? []).some(
-        (d) => d.external_id === chargerIds(this.gladys, serial).device,
-      )
+    if (role !== FEATURES.PAUSE) {
+      return false;
+    }
+    if (this.memory.serial) {
+      return this.memory.serial === serial;
+    }
+    return (this.gladys.devices ?? []).some(
+      (d) => d.external_id === chargerIds(this.gladys, serial).device,
     );
   }
 
@@ -1045,7 +1080,10 @@ export class NrgkickApp {
       throw this.refusal(ERRORS.disabled);
     }
     if (this.paused) {
-      throw this.refusal(ERRORS.paused(age(this.pausedUntil - this.now())));
+      const wait = age(this.pausedUntil - this.now());
+      throw this.refusal(
+        this.memory.pause?.reason === '5xx' ? ERRORS.serverPaused(wait) : ERRORS.paused(wait),
+      );
     }
     if (this.blocked) {
       throw this.refusal(ERRORS.blocked);
@@ -1204,7 +1242,12 @@ export class NrgkickApp {
       c.lastResumeAt = this.now();
     }
     this.logger.info(`NRGkick: ${role} (${plan.key}=${plan.value})`);
-    const reassertFrom = isPause && this.unconfirmedResume ? entry.sentAt : undefined;
+    // Evaluated after the send: a resume this pause overtook (it really left)
+    // may land after it, whatever its own outcome.
+    const reassertFrom = () =>
+      isPause && (this.unconfirmedResume || entry.overtaken?.sentAt !== undefined)
+        ? entry.sentAt
+        : undefined;
     try {
       const echoed = await this.client.command(address, this.config.auth, plan.key, plan.value, {
         startBy: sendBy,
@@ -1241,12 +1284,12 @@ export class NrgkickApp {
         // the next 90 s is reaffirmed if a read shows the charge resumed.
         c.unconfirmedResumeUntil = this.now() + TIMINGS.guard;
       }
-      this.guard(serial, plan, reassertFrom);
+      this.guard(serial, plan, reassertFrom());
       this.followUp();
       this.pauseAgain(serial, entry, plan);
       throw this.refusal(ERRORS.sentUnconfirmed(reason));
     }
-    this.guard(serial, plan, reassertFrom);
+    this.guard(serial, plan, reassertFrom());
     this.followUp();
     this.pauseAgain(serial, entry, plan);
   }
@@ -1304,6 +1347,9 @@ export class NrgkickApp {
       })
       .catch(async (err) => {
         this.logger.warn(`NRGkick: pause again failed (${errorReason(err)})`);
+        // Failed: the reads to come reaffirm the pause (twice at most).
+        this.guard(serial, plan, entry.sentAt);
+        this.followUp();
         if (err.kind === ERROR_KINDS.RATE_LIMITED) {
           await this.pause(err);
           await this.updateStatus();

@@ -26,6 +26,12 @@ up to date at the end of every milestone.
       late reads quarantined, 429/5xx pauses and credential blocks
       persisted, test button, docs en/fr, cover. Tested against made-up
       answers only.
+- [x] **Milestone 1 fixes — review 1** (2026-10-21): I1 (a pause sent
+      again that fails after an overtaken resume is reaffirmed by the reads
+      to come), I2 (docs: a pause stays until a resume, a resume from the
+      app or OCPP within the 90 s watch is cancelled, a pause may be
+      refused, e.g. solar charging), M1-M8 (see Decisions). Reviewer
+      scenarios H4, H4b and the minors in `test/review.test.js`.
 - [ ] **Milestone 2 — real charger**: run against a real NRGkick Gen2 (see
       "To check"), turn the answers (anonymized) into fixtures.
 - [ ] **Milestone 3 — more**: several chargers, mDNS discovery
@@ -56,6 +62,12 @@ up to date at the end of every milestone.
   other (said in the docs).
 - The hierarchy of the energy settings of Gladys (the charger under the
   main meter, so that it is not counted twice): to confirm on a real core.
+- Whether `charge_pause` stays 1 after the vehicle is unplugged and after a
+  restart of the charger (the docs warn that a forgotten pause may prevent
+  the next charge), and that a `current_set` during a pause does not resume
+  the charge (assumed in "Decisions", never checked).
+- A pause refused by the charger (nrgkick-api tests "Charging pause is
+  blocked by solar-charging"): its HTTP status and `Response` text.
 - Whether `device_name` (user-defined, may hold emojis) should become the
   device name (v1 uses "NRGkick" + the last 4 characters of the serial).
 
@@ -208,6 +220,34 @@ up to date at the end of every milestone.
   charger when it is set up for OCPP; said in the docs (command only one).
 - **gladys_version >= 5.1.0** (as the sibling local modules); **category
   `energy`**, transport `local`.
+- **Review 1 fixes** (2026-10-21):
+  - I1: the reaffirmation of a pause is decided after its send, and also
+    when the pause overtook a resume that really left; a pause sent again
+    (after that resume) that fails keeps the reaffirmation and schedules
+    the follow-up reads: the next read showing `charge_pause` 0 sends the
+    pause again (twice at most). The same gap exists in gladys-peblar's
+    `stopAgain` (reported to the main session, not fixed there);
+  - I2: docs and the option text say that a pause stays on the charger
+    until a resume (only the app resumes with the option off), that a
+    resume from the app or OCPP within the 90 s watch is cancelled, and
+    that the charger may refuse a pause ("refused by the charger");
+  - M1: a bound (rated current, attachment max) missing from one `/info`
+    answer keeps the last one read (reset only for another serial);
+  - M2: the minute between two changes, the last resume and the watch of an
+    unconfirmed resume survive a restart (new credentials or address);
+  - M3: the last serial read is kept in `/data` (`serial`, not a secret); a
+    pause before the first read goes only to that device (any created
+    device only when `/data` has none, an older state);
+  - M4: a pause or a block kept across a restart shows the created devices
+    offline (status, connector, badge), and the "not read any more" suffix
+    only once a charger was read;
+  - M5: a second pause shares the outcome of a pause still under way only;
+    one that only waits to be sent again lets the new pause go itself;
+  - M6: during a 5xx pause, the refusal of a resume or a current says
+    "server error", not "slow down";
+  - M7: the dead `PAUSED` error kind removed;
+  - M8: credentials pasted in the address (`user:pass@`) are ignored and
+    never shown back in the status (said in the docs).
 - **Demo files of the template** (`src/devices/*`, `scenes.js`, `widgets.js`,
   `weather.js` and their tests, the demo `test/config.test.js`) removed from
   the repository (moved aside, not deleted, by this session).

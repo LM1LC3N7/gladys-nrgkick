@@ -26,9 +26,17 @@ const LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
  * name, with an optional port (a pasted URL is reduced to its host and port).
  * @returns {{ host: string, port: number } | undefined} undefined when invalid or empty.
  */
-export function parseAddress(raw) {
-  const text = String(raw ?? '')
+/**
+ * The address typed, without credentials pasted in it (`user:pass@`): they
+ * are ignored (the dedicated fields hold them) and never shown back.
+ */
+export const withoutCredentials = (raw) =>
+  String(raw ?? '')
     .trim()
+    .replace(/^(https?:\/\/)?.*@/is, '$1');
+
+export function parseAddress(raw) {
+  const text = withoutCredentials(raw)
     .replace(/^https?:\/\//i, '')
     .replace(/[/?#].*$/, '')
     .toLowerCase();
@@ -81,7 +89,7 @@ export function normalizeConfig(raw = {}) {
       c[key] = value;
     }
   }
-  const typed = String(c.host ?? '').trim();
+  const typed = withoutCredentials(c.host);
   const address = parseAddress(typed);
   const username = secret(c.username, { colon: false });
   const password = secret(c.password);

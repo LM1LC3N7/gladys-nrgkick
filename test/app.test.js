@@ -35,14 +35,21 @@ const feature = (role) => `${DEVICE}:${role}`;
 
 async function setup(
   t,
-  { config = CONFIG, server = fakeCharger(), store = memoryStore(), create = true, logs = [] } = {},
+  {
+    config = CONFIG,
+    server = fakeCharger(),
+    store = memoryStore(),
+    create = true,
+    logs = [],
+    transport,
+  } = {},
 ) {
   t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: NOW });
   const gladys = createFakeGladys({ config });
   const app = new NrgkickApp({
     gladys,
     logger: recorder(logs),
-    transport: server.transport,
+    transport: transport ?? server.transport,
     now: () => Date.now(),
     store,
   });

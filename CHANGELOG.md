@@ -37,5 +37,13 @@ the notes of the version's GitHub Release.
   JSON API turned off in the app is said in the status.
 - "Test the connection" button; documentation in English and French;
   `LICENSE` and `THIRD_PARTY_NOTICES.md` shipped in the image.
+- A pause sent again after an overtaken resume that fails is reaffirmed by
+  the next reads; the docs say that a pause stays on the charger until a
+  resume, that a resume from the app within the 90 s watch is cancelled,
+  and that the charger may refuse a pause.
+- A restart keeps the minute between two changes; a pause before the first
+  read goes only to the last charger read at the address; after a restart
+  during a pause or a block, the devices are shown offline; credentials
+  pasted in the address are ignored and never shown back.
 
 [Unreleased]: https://github.com/LM1LC3N7/gladys-nrgkick/commits/main

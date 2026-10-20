@@ -202,6 +202,11 @@ export const ERRORS = {
       `The charger asked to slow down: commands paused for ${wait.en} ("Pause charging" stays available).`,
       `La borne a demandé de ralentir : commandes en pause pendant ${wait.fr} (« Mettre la charge en pause » reste disponible).`,
     ),
+  serverPaused: (wait) =>
+    both(
+      `The charger answered with a server error: commands paused for ${wait.en} ("Pause charging" stays available).`,
+      `La borne a répondu par une erreur serveur : commandes en pause pendant ${wait.fr} (« Mettre la charge en pause » reste disponible).`,
+    ),
   blocked: both(
     'The charger refused the credentials: commands are not sent until they are fixed ("Pause charging" is still tried).',
     "La borne a refusé les identifiants : les commandes ne sont pas envoyées tant qu'ils ne sont pas corrigés (« Mettre la charge en pause » est quand même tentée).",

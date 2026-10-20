@@ -212,5 +212,10 @@ test('the memory in /data is repaired and bounded, and holds no secret', () => {
   assert.deepEqual(Object.keys(memory.indexes), ['ext:a:nrgkick:abcd:energy-index']);
   assert.equal(memory.indexes['ext:a:nrgkick:abcd:energy-index'].held, null);
   assert.ok(!JSON.stringify(memory).includes('leak'));
-  assert.deepEqual(normalizeMemory('garbage', now), { pause: null, block: null, indexes: {} });
+  assert.deepEqual(normalizeMemory('garbage', now), {
+    pause: null,
+    block: null,
+    indexes: {},
+    serial: null,
+  });
 });

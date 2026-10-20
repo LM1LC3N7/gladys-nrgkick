@@ -87,7 +87,7 @@ function indexesOf(raw) {
 /**
  * The persisted state, repaired and bounded:
  * `{ pause: { until, reason } | null, block: { until, mode, failures } | null,
- *    indexes: { [featureId]: { last, held } } }`.
+ *    indexes: { [featureId]: { last, held } }, serial: string | null }`.
  */
 export function normalizeMemory(raw, now) {
   const data = plain(raw) ? raw : {};
@@ -112,5 +112,10 @@ export function normalizeMemory(raw, now) {
           }
         : null,
     indexes: indexesOf(data.indexes),
+    /** The last serial read at the address (not a secret: the device id). */
+    serial:
+      typeof data.serial === 'string' && /^[0-9a-z](?:[0-9a-z-]{2,38}[0-9a-z])$/.test(data.serial)
+        ? data.serial
+        : null,
   };
 }

@@ -42,6 +42,8 @@ Read every 30 seconds by default (10 s to 10 min, configurable).
 3. Install the integration from the Gladys store. In its configuration,
    enter the **IP address of the charger**, and only when BasicAuth is on,
    its **user name** and **password** (both, or neither).
+   A user name and a password pasted in the address (`admin:…@`) are
+   ignored and never shown back: use the dedicated fields.
 4. Save, then add the charger from the **Discovery** tab.
 
 The password is **kept by Gladys in its database, never shown again**, and
@@ -88,7 +90,19 @@ minute between two changes, not by a 429 pause or refused credentials (then
 one request), not by a missing read (it needs none). When a resume was left
 without confirmation, it may still reach the charger later: a pause sent
 within the next 90 seconds is watched, and sent again (twice at most) if a
-read shows the charge resumed while no other resume left.
+read shows the charge resumed while no other resume left from Gladys.
+**Beware**: a resume made within these 90 seconds from the NRGkick app or
+through OCPP is therefore cancelled too (twice at most); do it again after.
+
+**A pause stays on the charger until a resume.** With the option below off
+(the default), only the NRGkick app resumes the charge: a forgotten pause (by
+a scene, the AI chat) may prevent the next charge and leave the car
+uncharged. The charger may also refuse a pause (for instance when solar
+charging blocks it): Gladys then answers "The charger refused the command".
+
+Before the first read after a restart (a 429 pause or a block kept in
+`/data`), the pause goes to the configured address for the last charger
+read at that address only.
 
 **"Resume charging"** and **"Set the charging current"** refuse every command
 while **Allow resuming and the charging current** is off (the default). On:

@@ -44,6 +44,8 @@ Lecture toutes les 30 secondes par défaut (de 10 s à 10 min, réglable).
    saisissez l'**adresse IP de la borne**, et seulement si BasicAuth est
    activé, son **nom d'utilisateur** et son **mot de passe** (les deux, ou
    aucun).
+   Un nom et un mot de passe collés dans l'adresse (`admin:…@`) sont
+   ignorés et jamais réaffichés : utilisez les champs dédiés.
 4. Enregistrez, puis ajoutez la borne depuis l'onglet **Découverte**.
 
 Le mot de passe est **gardé par Gladys dans sa base, jamais réaffiché**, et
@@ -94,7 +96,21 @@ refusés (alors une seule requête), ni par l'absence de lecture (elle n'en a
 pas besoin). Quand une reprise est restée sans confirmation, elle peut
 encore atteindre la borne plus tard : une pause envoyée dans les 90 secondes
 qui suivent est surveillée, et renvoyée (deux fois au plus) si une lecture
-montre la charge reprise alors qu'aucune autre reprise n'est partie.
+montre la charge reprise alors qu'aucune autre reprise n'est partie depuis
+Gladys. **Attention** : une reprise faite dans ces 90 secondes depuis
+l'application NRGkick ou par OCPP est donc annulée elle aussi (deux fois au
+plus) ; refaites-la après.
+
+**Une pause reste sur la borne jusqu'à une reprise.** Avec l'option
+ci-dessous désactivée (par défaut), seule l'application NRGkick reprend la
+charge : une pause oubliée (par une scène, le chat IA) peut empêcher la
+charge suivante et laisser la voiture non chargée. La borne peut aussi
+refuser une pause (par exemple quand la charge solaire la bloque) : Gladys
+répond alors « La borne a refusé la commande ».
+
+Avant la première lecture après un redémarrage (une pause 429 ou un blocage
+gardés dans `/data`), la pause part vers l'adresse configurée pour la
+dernière borne lue à cette adresse seulement.
 
 **« Reprendre la charge »** et **« Régler le courant de charge »** refusent
 toute commande tant que **Autoriser la reprise et le courant de charge** est
