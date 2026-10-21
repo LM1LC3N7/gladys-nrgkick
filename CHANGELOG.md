@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-21
+
 ### Added
 
 - NRGkick Gen2 chargers read over their local REST JSON API (no cloud), with
@@ -46,4 +48,5 @@ the notes of the version's GitHub Release.
   during a pause or a block, the devices are shown offline; credentials
   pasted in the address are ignored and never shown back.
 
-[Unreleased]: https://github.com/LM1LC3N7/gladys-nrgkick/commits/main
+[Unreleased]: https://github.com/LM1LC3N7/gladys-nrgkick/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/LM1LC3N7/gladys-nrgkick/releases/tag/v0.1.1
