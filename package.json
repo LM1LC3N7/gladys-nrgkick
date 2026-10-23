@@ -1,6 +1,6 @@
 {
   "name": "gladys-nrgkick",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Gladys Assistant external integration for the NRGkick Gen2 portable EV charger (state, power, current and voltage per phase, session energy, guarded energy index, temperatures; pause, and optional resume and charging current), over its local REST JSON API. Unofficial, not affiliated with DiniTech.",
   "type": "module",
