@@ -321,6 +321,28 @@ test('the acceptance: a second click too late, or on another value, lists again'
   assert.equal(last(gladys, 'energy-index'), 14_187);
 });
 
+test('the energy index: a second click never takes a drop lower than the one listed', async (t) => {
+  const { gladys, advance, charger } = await setup(t);
+  assert.equal(last(gladys, 'energy-index'), 14_187);
+  charger.values.energy.total_charged_energy = 12_000;
+  await advance(30 * SECOND);
+  assert.equal(last(gladys, 'energy-index'), 14_187, 'a drop held');
+  let ack = await gladys.fake.action(ACTIONS.ACCEPT_HELD);
+  assert.match(ack.data.message.en, /Click again within 60 s/);
+  charger.values.energy.total_charged_energy = 5_000;
+  await advance(30 * SECOND);
+  assert.equal(last(gladys, 'energy-index'), 14_187);
+  ack = await gladys.fake.action(ACTIONS.ACCEPT_HELD);
+  await settle();
+  assert.match(ack.data.message.en, /Click again within 60 s/, 'a first click again');
+  assert.match(ack.data.message.fr, /14187 à 5 kWh/);
+  assert.equal(last(gladys, 'energy-index'), 14_187, 'never 5 kWh without a click');
+  ack = await gladys.fake.action(ACTIONS.ACCEPT_HELD);
+  await settle();
+  assert.match(ack.data.message.en, /^Accepted/);
+  assert.equal(last(gladys, 'energy-index'), 5, 'the value listed, accepted');
+});
+
 test('the index guard survives a restart (kept in /data)', async (t) => {
   const store = memoryStore({
     indexes: {
